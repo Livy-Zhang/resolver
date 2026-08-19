@@ -6,8 +6,6 @@ import {DelegationManager} from "../../contracts/DelegationManager.sol";
 import {MockERC20} from "../../contracts/mocks/MockERC20.sol";
 import {MockStakingManager} from "../../contracts/mocks/MockStakingManager.sol";
 
-
-
 contract DelegationManagerHandler is Test {
     DelegationManager public delegationManager;
     MockStakingManager public stakingManager;

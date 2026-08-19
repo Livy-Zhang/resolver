@@ -1,12 +1,16 @@
 import { defineConfig } from "hardhat/config";
 import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import hardhatVerify from "@nomicfoundation/hardhat-verify";
 import dotenv from "dotenv";
 
 // 加载 .env
 dotenv.config();
 
 export default defineConfig({
-    plugins: [hardhatToolboxMochaEthers],
+    plugins: [hardhatToolboxMochaEthers,
+            hardhatVerify,
+    ],
+
 
     solidity: {
         version: "0.8.28",
@@ -38,5 +42,10 @@ export default defineConfig({
                   },
               }
             : {}),
+    },  
+    verify: {
+    etherscan: {
+        apiKey: process.env.ETHERSCAN_API_KEY,
     },
+},
 });

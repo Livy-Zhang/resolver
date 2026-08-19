@@ -1,0 +1,6 @@
+{
+  "ResolverModule#MockERC20": "0x1381eF9EAC67dcB0Aa764628C820e6A352AF0F23",
+  "ResolverModule#StakingManager": "0x99eFB0bb44031F83778CBD36327B6165008307EE",
+  "ResolverModule#TokenVesting": "0x248c15b7845BAB5fC42deE631BD7117195B72D1B",
+  "ResolverModule#DelegationManager": "0xCC905b6e7856F0bE9381B809bB16e463a3159A2a"
+}

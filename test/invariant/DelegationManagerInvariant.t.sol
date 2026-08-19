@@ -4,19 +4,8 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 import {DelegationManager} from "../../contracts/DelegationManager.sol";
 import {MockERC20} from "../../contracts/mocks/MockERC20.sol";
+import {MockStakingManager} from "../../contracts/mocks/MockStakingManager.sol";
 
-
-contract MockStakingManager {
-    mapping(address => bool) public validResolvers;
-
-    function setResolver(address resolver, bool valid) external {
-        validResolvers[resolver] = valid;
-    }
-
-    function isValidResolver(address resolver) external view returns (bool) {
-        return validResolvers[resolver];
-    }
-}
 
 
 contract DelegationManagerHandler is Test {

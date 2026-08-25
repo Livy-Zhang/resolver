@@ -219,7 +219,6 @@ describe("StakingManager", function () {
 
             await stakingManager.connect(resolverA).withdrawStaked(resolverA.address);
 
-            // 第二次 unstake 应该成功
             const secondUnstake = ethers.parseEther("500");
             await expect(stakingManager.connect(resolverA).unstake(secondUnstake))
                 .to.emit(stakingManager, "Unstaked")
@@ -590,28 +589,23 @@ describe("StakingManager", function () {
         it("Should complete full lifecycle: stake -> unstake -> withdraw -> stake again", async function () {
             const stakeAmount = ethers.parseEther("2000");
 
-            // 第一次质押
             await stakingManager.connect(resolverA).stake(stakeAmount);
             let stakeInfo = await stakingManager.stakes(resolverA.address);
             expect(stakeInfo.amountActive).to.equal(stakeAmount);
 
-            // 解除质押
             await stakingManager.connect(resolverA).unstake(stakeAmount);
             stakeInfo = await stakingManager.stakes(resolverA.address);
             expect(stakeInfo.amountLocked).to.equal(stakeAmount);
 
-            // 等待解冻期
             await ethers.provider.send("evm_setNextBlockTimestamp", [Number(stakeInfo.unlockTime)]);
             await ethers.provider.send("evm_mine", []);
 
-            // 提取
             await stakingManager.connect(resolverA).withdrawStaked(resolverA.address);
             stakeInfo = await stakingManager.stakes(resolverA.address);
             expect(stakeInfo.amountLocked).to.equal(0);
             expect(stakeInfo.unlockTime).to.equal(0);
             expect(stakeInfo.amountActive).to.equal(0);
 
-            // 第二次质押
             await stakingManager.connect(resolverA).stake(stakeAmount);
             const newStakeInfo = await stakingManager.stakes(resolverA.address);
             expect(newStakeInfo.amountActive).to.equal(stakeAmount);
@@ -626,22 +620,18 @@ describe("StakingManager", function () {
 
             await stakingManager.connect(resolverA).stake(stakeAmount);
 
-            // 第一次解除
             await stakingManager.connect(resolverA).unstake(firstUnstake);
             let stakeInfo = await stakingManager.stakes(resolverA.address);
 
-            // 等待并提取
             await ethers.provider.send("evm_setNextBlockTimestamp", [Number(stakeInfo.unlockTime)]);
             await ethers.provider.send("evm_mine", []);
             await stakingManager.connect(resolverA).withdrawStaked(resolverA.address);
 
-            // 第二次解除
             await stakingManager.connect(resolverA).unstake(secondUnstake);
             stakeInfo = await stakingManager.stakes(resolverA.address);
             expect(stakeInfo.amountActive).to.equal(stakeAmount - firstUnstake - secondUnstake);
             expect(stakeInfo.amountLocked).to.equal(secondUnstake);
 
-            // 等待并提取
             await ethers.provider.send("evm_setNextBlockTimestamp", [Number(stakeInfo.unlockTime)]);
             await ethers.provider.send("evm_mine", []);
             await stakingManager.connect(resolverA).withdrawStaked(resolverA.address);

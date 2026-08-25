@@ -302,7 +302,7 @@ describe("TokenVesting", function () {
 
             const expected =
                 (scheduleA.totalAllocation * 1n) /
-                (scheduleA.vestingDuration - scheduleA.cliffDuration);
+                (BigInt(scheduleA.vestingDuration) - BigInt(scheduleA.cliffDuration));
             expect(vested).to.equal(expected);
         });
 
@@ -322,7 +322,7 @@ describe("TokenVesting", function () {
                 (scheduleB.totalAllocation *
                     (BigInt(await ethers.provider.getBlock("latest").then((b) => b!.timestamp)) -
                         cliffEndB)) /
-                (scheduleB.vestingDuration - scheduleB.cliffDuration);
+                (BigInt(scheduleB.vestingDuration) - BigInt(scheduleB.cliffDuration));
             expect(vested).to.equal(expected);
         });
 
@@ -598,7 +598,7 @@ describe("TokenVesting", function () {
                 (scheduleBefore.totalAllocation *
                     (BigInt(block!.timestamp) -
                         (scheduleBefore.startTime + scheduleBefore.cliffDuration))) /
-                (scheduleBefore.vestingDuration - scheduleBefore.cliffDuration);
+                (BigInt(scheduleBefore.vestingDuration) - BigInt(scheduleBefore.cliffDuration));
             const unvested = scheduleBefore.totalAllocation - vested;
 
             await expect(revokeTx)
@@ -637,7 +637,6 @@ describe("TokenVesting", function () {
             const cliff = 30 * 24 * 60 * 60;
             const vesting = 365 * 24 * 60 * 60;
 
-            // 1. 创建归属计划
             const contractBalanceBefore = await mockToken.balanceOf(
                 await tokenVesting.getAddress(),
             );
@@ -649,12 +648,10 @@ describe("TokenVesting", function () {
             expect(schedule.totalAllocation).to.equal(amount);
             expect(schedule.revoked).to.be.false;
 
-            // 2. 推进时间到悬崖期之后
             const cliffEnd = schedule.startTime + BigInt(cliff);
             await ethers.provider.send("evm_setNextBlockTimestamp", [Number(cliffEnd + 1000n)]);
             await ethers.provider.send("evm_mine", []);
 
-            // 3. 领取部分代币
             const balanceBefore = await mockToken.balanceOf(beneficiaryA.address);
             await tokenVesting.connect(beneficiaryA).claim();
             const balanceAfter = await mockToken.balanceOf(beneficiaryA.address);
@@ -662,26 +659,22 @@ describe("TokenVesting", function () {
             expect(claimedAmount).to.be.greaterThan(0);
             expect(claimedAmount).to.be.lessThan(amount);
 
-            // 4. 推进时间到归属期结束
             schedule = await tokenVesting.vestingSchedules(beneficiaryA.address);
             const vestingEnd = schedule.startTime + BigInt(vesting);
             await ethers.provider.send("evm_setNextBlockTimestamp", [Number(vestingEnd + 1n)]);
             await ethers.provider.send("evm_mine", []);
 
-            // 5. 领取全部剩余代币
             const balanceBeforeFull = await mockToken.balanceOf(beneficiaryA.address);
             const claimable = await tokenVesting.getClaimableAmount(beneficiaryA.address);
             await tokenVesting.connect(beneficiaryA).claim();
             const balanceAfterFull = await mockToken.balanceOf(beneficiaryA.address);
             expect(balanceAfterFull - balanceBeforeFull).to.equal(claimable);
 
-            // 6. 验证最终状态：全部代币已领取
             schedule = await tokenVesting.vestingSchedules(beneficiaryA.address);
             expect(schedule.amountClaimed).to.equal(amount);
             expect(schedule.totalAllocation).to.equal(amount);
             expect(await tokenVesting.getClaimableAmount(beneficiaryA.address)).to.equal(0);
 
-            // 7. 验证合约中的代币已全部转移
             const contractBalanceFinal = await mockToken.balanceOf(await tokenVesting.getAddress());
             expect(contractBalanceFinal).to.equal(0);
         });
@@ -691,47 +684,39 @@ describe("TokenVesting", function () {
             const cliff = 30 * 24 * 60 * 60;
             const vesting = 365 * 24 * 60 * 60;
 
-            // 1. 创建归属计划
             await tokenVesting.scheduleVesting(beneficiaryA.address, amount, cliff, vesting);
 
             let schedule = await tokenVesting.vestingSchedules(beneficiaryA.address);
             const cliffEnd = schedule.startTime + BigInt(cliff);
 
-            // 2. 推进时间到悬崖期之后（产生一些已归属代币）
             await ethers.provider.send("evm_setNextBlockTimestamp", [Number(cliffEnd + 1000n)]);
             await ethers.provider.send("evm_mine", []);
 
-            // 3. 领取部分已归属代币
             const balanceBeforeClaim = await mockToken.balanceOf(beneficiaryA.address);
             await tokenVesting.connect(beneficiaryA).claim();
             const balanceAfterClaim = await mockToken.balanceOf(beneficiaryA.address);
             const claimedAmount = balanceAfterClaim - balanceBeforeClaim;
             expect(claimedAmount).to.be.greaterThan(0);
 
-            // 4. 获取撤销前的状态
             const scheduleBeforeRevoke = await tokenVesting.vestingSchedules(beneficiaryA.address);
             const contractBalanceBefore = await mockToken.balanceOf(
                 await tokenVesting.getAddress(),
             );
             const refundBalanceBefore = await mockToken.balanceOf(refundAddress.address);
 
-            // 5. 撤销归属计划（不推进时间）
             await tokenVesting.revoke(beneficiaryA.address, refundAddress.address);
 
             const scheduleAfterRevoke = await tokenVesting.vestingSchedules(beneficiaryA.address);
             const refundBalanceAfter = await mockToken.balanceOf(refundAddress.address);
             const contractBalanceAfter = await mockToken.balanceOf(await tokenVesting.getAddress());
 
-            // 6. 验证撤销结果
             expect(scheduleAfterRevoke.revoked).to.be.true;
 
-            // 7. 验证退款：未归属部分退回
             const expectedRefund =
                 scheduleBeforeRevoke.totalAllocation - scheduleAfterRevoke.totalAllocation;
             expect(refundBalanceAfter - refundBalanceBefore).to.equal(expectedRefund);
             expect(contractBalanceBefore - contractBalanceAfter).to.equal(expectedRefund);
 
-            // 8. 验证已领取的代币保留在受益人手中
             const balanceAfterRevoke = await mockToken.balanceOf(beneficiaryA.address);
             expect(balanceAfterRevoke - balanceAfterClaim).to.equal(0);
         });

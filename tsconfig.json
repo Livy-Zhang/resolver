@@ -7,5 +7,7 @@
     "outDir": "dist",
     "types": ["node", "mocha"],
     "verbatimModuleSyntax": true
-  }
+  },
+  "include": ["hardhat.config.ts", "ignition/**/*.ts", "test/**/*.ts"],
+  "exclude": ["types"]
 }

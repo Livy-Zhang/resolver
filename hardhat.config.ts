@@ -7,10 +7,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export default defineConfig({
-    plugins: [hardhatToolboxMochaEthers,
-            hardhatVerify,
-    ],
-
+    plugins: [hardhatToolboxMochaEthers, hardhatVerify],
 
     solidity: {
         version: "0.8.28",
@@ -42,10 +39,10 @@ export default defineConfig({
                   },
               }
             : {}),
-    },  
-    verify: {
-    etherscan: {
-        apiKey: process.env.ETHERSCAN_API_KEY,
     },
-},
+    verify: {
+        etherscan: {
+            apiKey: process.env.ETHERSCAN_API_KEY,
+        },
+    },
 });

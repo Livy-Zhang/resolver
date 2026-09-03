@@ -15,10 +15,6 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 contract TokenVesting is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    /**
-     * @dev At `startTime + cliffDuration`, vesting begins from zero. Tokens then vest linearly
-     * until `startTime + vestingDuration`, when the full allocation has vested.
-     */
     struct VestingSchedule {
         uint256 totalAllocation;
         uint256 startTime;
@@ -48,6 +44,7 @@ contract TokenVesting is Ownable, ReentrancyGuard {
 
     error InvalidToken();
     error InvalidBeneficiaryAddress();
+    error InvalidRefundAddress();
     error InvalidAllocationAmount();
     error InvalidVestingDuration();
     error InvalidCliffDuration();
@@ -119,6 +116,8 @@ contract TokenVesting is Ownable, ReentrancyGuard {
      * @param refundAddress Recipient of the unvested token amount.
      */
     function revoke(address beneficiary, address refundAddress) external onlyOwner {
+        if (beneficiary == address(0)) revert InvalidBeneficiaryAddress();
+        if (refundAddress == address(0)) revert InvalidRefundAddress();
         VestingSchedule storage schedule = vestingSchedules[beneficiary];
 
         if (schedule.startTime == 0) revert ScheduleDoesNotExist();
@@ -129,6 +128,7 @@ contract TokenVesting is Ownable, ReentrancyGuard {
         uint256 unvested = schedule.totalAllocation - vested;
         schedule.revoked = true;
         schedule.totalAllocation = vested;
+        totalVestingAllocation -= unvested;
         if (unvested > 0) VESTING_TOKEN.safeTransfer(refundAddress, unvested);
 
         emit ScheduleRevoked(beneficiary, refundAddress, unvested);

@@ -1,34 +1,55 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
+const INITIAL_TOKEN_SUPPLY = 1_000_000n * 10n ** 18n;
+const MIN_SELF_STAKE = 1_000n * 10n ** 18n;
+const REWARD_DURATION_DAYS = 30;
+const FREEZING_PERIOD = 7 * 24 * 60 * 60;
+
 export default buildModule("ResolverModule", (m) => {
     const deployer = m.getAccount(0);
+    const rootPublisher = deployer;
 
-    // 1. 部署 MockERC20
-    const token = m.contract("MockERC20", [deployer, 1000000n * 10n ** 18n]);
+    // Development tokens. Staking principal and rewards must use separate tokens.
+    const stakingToken = m.contract("MockERC20", [deployer, INITIAL_TOKEN_SUPPLY], {
+        id: "StakingToken",
+    });
+    const rewardToken = m.contract("MockERC20", [deployer, INITIAL_TOKEN_SUPPLY], {
+        id: "RewardToken",
+    });
 
-    // 2. TokenVesting 依赖 token
-    const tokenVesting = m.contract("TokenVesting", [token]);
+    const tokenVesting = m.contract("TokenVesting", [rewardToken]);
 
-    // 3. StakingManager 依赖 token
     const stakingManager = m.contract("StakingManager", [
-        1000n * 10n ** 18n,
-        token,
-        7 * 24 * 60 * 60,
+        MIN_SELF_STAKE,
+        stakingToken,
+        FREEZING_PERIOD,
     ]);
 
-    // 4. DelegationManager 依赖 token + stakingManager
     const delegationManager = m.contract("DelegationManager", [
-        token,
-        token,
+        rewardToken,
+        stakingToken,
         stakingManager,
-        30,
-        7 * 24 * 60 * 60,
+        REWARD_DURATION_DAYS,
+        FREEZING_PERIOD,
+    ]);
+
+    // The implementation is intentionally not initialized; each clone is initialized by the factory.
+    const rewardsDistributorImplementation = m.contract("RewardsDistributor");
+
+    const rewardsDistributorFactory = m.contract("RewardsDistributorFactory", [
+        rewardsDistributorImplementation,
+        stakingManager,
+        rootPublisher,
+        rewardToken,
     ]);
 
     return {
-        token,
+        stakingToken,
+        rewardToken,
         tokenVesting,
         stakingManager,
         delegationManager,
+        rewardsDistributorImplementation,
+        rewardsDistributorFactory,
     };
 });

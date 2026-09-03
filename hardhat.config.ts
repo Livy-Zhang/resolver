@@ -3,7 +3,7 @@ import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-et
 import hardhatVerify from "@nomicfoundation/hardhat-verify";
 import dotenv from "dotenv";
 
-// 加载 .env
+// Load environment variables.
 dotenv.config();
 
 export default defineConfig({
@@ -20,13 +20,12 @@ export default defineConfig({
     },
 
     networks: {
-        // Hardhat 内置测试网络
+        // Built-in Hardhat test network.
         hardhat: {
             type: "edr-simulated",
             chainType: "l1",
         },
-
-        // 只有配置 RPC 时才启用 Sepolia
+        // Enable Sepolia only when an RPC URL is configured.
         ...(process.env.SEPOLIA_RPC_URL
             ? {
                   sepolia: {

@@ -269,14 +269,15 @@ contract DelegationManager is Ownable, ReentrancyGuard {
     /** @notice Withdraws the caller's entire delegation and claims all accrued rewards. */
     function exit() external nonReentrant updateReward(msg.sender) {
         Delegation storage delegationInfo = delegations[msg.sender];
+        if (delegationInfo.delegatedAmount == 0) revert NotValidDelegation();
         _undelegate(msg.sender, delegationInfo.delegatedAmount, delegationInfo);
         _claimReward(msg.sender);
     }
 
     /**
      * @notice Starts or replaces the reward schedule using a new reward amount.
-     * @dev The owner must transfer sufficient reward tokens to this contract before calling this
-     * function; this function does not transfer tokens from the owner.
+     * @dev The owner must transfer sufficient reward tokens to this contract before calling this function.
+     * @dev this function does not transfer tokens from the owner.
      * @param reward Amount of reward tokens to distribute over the next period.
      */
     function notifyRewardAmount(uint256 reward) external onlyOwner updateReward(address(0)) {

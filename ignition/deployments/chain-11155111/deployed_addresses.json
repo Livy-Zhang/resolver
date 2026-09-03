@@ -1,6 +1,9 @@
 {
-  "ResolverModule#MockERC20": "0x1381eF9EAC67dcB0Aa764628C820e6A352AF0F23",
-  "ResolverModule#StakingManager": "0x99eFB0bb44031F83778CBD36327B6165008307EE",
-  "ResolverModule#TokenVesting": "0x248c15b7845BAB5fC42deE631BD7117195B72D1B",
-  "ResolverModule#DelegationManager": "0xCC905b6e7856F0bE9381B809bB16e463a3159A2a"
+  "ResolverModule#RewardToken": "0x2AD6d195f4ae97740E75D1698536E6a17a186e30",
+  "ResolverModule#RewardsDistributor": "0xd85843a1DAF74cCF161cEcE2d9Dd7D8C2B2B0d45",
+  "ResolverModule#StakingToken": "0x4bAD8D28229c1e3769BE8eA5D93C7DeCda928f2C",
+  "ResolverModule#StakingManager": "0x46F173816ACA426ba1110517f45c6cbbbc38fDaa",
+  "ResolverModule#TokenVesting": "0xe5E614167A19d9D984199fa172510342377DD03d",
+  "ResolverModule#DelegationManager": "0x64E8E0051DA7991142911376865f9Ec1f5E33e4f",
+  "ResolverModule#RewardsDistributorFactory": "0x7A9CE1F71c8ca1D4A7fA350D5dA8fd629EFe1e00"
 }

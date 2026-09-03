@@ -562,6 +562,22 @@ describe("DelegationManager", function () {
                 delegationManager.connect(delegatorA).exit(),
             ).to.be.revertedWithCustomError(delegationManager, "FreezingPeriodNotOver");
         });
+
+        it("Should revert if the caller has no delegation", async function () {
+            await expect(
+                delegationManager.connect(delegatorB).exit(),
+            ).to.be.revertedWithCustomError(delegationManager, "NotValidDelegation");
+        });
+
+        it("Should revert after the caller fully undelegates", async function () {
+            await ethers.provider.send("evm_increaseTime", [FREEZING_PERIOD]);
+            await ethers.provider.send("evm_mine", []);
+            await delegationManager.connect(delegatorA).undelegate(delegationAmount);
+
+            await expect(
+                delegationManager.connect(delegatorA).exit(),
+            ).to.be.revertedWithCustomError(delegationManager, "NotValidDelegation");
+        });
     });
 
     describe("notifyRewardAmount", function () {

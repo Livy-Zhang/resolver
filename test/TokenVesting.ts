@@ -188,6 +188,17 @@ describe("TokenVesting", function () {
             ).to.be.revertedWithCustomError(tokenVesting, "InvalidBeneficiaryAddress");
         });
 
+        it("Should revert if total allocation is zero", async function () {
+            await expect(
+                tokenVesting.scheduleVesting(
+                    beneficiaryA.address,
+                    0,
+                    cliffDurationA,
+                    vestingDurationA,
+                ),
+            ).to.be.revertedWithCustomError(tokenVesting, "InvalidAllocationAmount");
+        });
+
         it("Should revert if vestingDuration is zero", async function () {
             await expect(
                 tokenVesting.scheduleVesting(beneficiaryA.address, amountA, cliffDurationA, 0),
@@ -577,6 +588,35 @@ describe("TokenVesting", function () {
             ).to.be.revertedWithCustomError(tokenVesting, "ScheduleDoesNotExist");
         });
 
+        it("Should revert if beneficiary is the zero address", async function () {
+            await expect(
+                tokenVesting.revoke(ethers.ZeroAddress, refundAddress.address),
+            ).to.be.revertedWithCustomError(tokenVesting, "InvalidBeneficiaryAddress");
+        });
+
+        it("Should revert if refund address is the zero address without changing state", async function () {
+            const scheduleBefore = await tokenVesting.vestingSchedules(beneficiaryA.address);
+            const contractBalanceBefore = await mockToken.balanceOf(
+                await tokenVesting.getAddress(),
+            );
+            const beneficiaryBalanceBefore = await mockToken.balanceOf(beneficiaryA.address);
+            const totalAllocationBefore = await tokenVesting.totalVestingAllocation();
+
+            await expect(
+                tokenVesting.revoke(beneficiaryA.address, ethers.ZeroAddress),
+            ).to.be.revertedWithCustomError(tokenVesting, "InvalidRefundAddress");
+
+            const scheduleAfter = await tokenVesting.vestingSchedules(beneficiaryA.address);
+            expect(scheduleAfter).to.deep.equal(scheduleBefore);
+            expect(await mockToken.balanceOf(await tokenVesting.getAddress())).to.equal(
+                contractBalanceBefore,
+            );
+            expect(await mockToken.balanceOf(beneficiaryA.address)).to.equal(
+                beneficiaryBalanceBefore,
+            );
+            expect(await tokenVesting.totalVestingAllocation()).to.equal(totalAllocationBefore);
+        });
+
         it("Should revert if schedule is revoked twice", async function () {
             await tokenVesting.revoke(beneficiaryA.address, refundAddress.address);
             await expect(
@@ -586,6 +626,7 @@ describe("TokenVesting", function () {
 
         it("Should revoke normally, emit event, update state, and refund unvested tokens", async function () {
             const scheduleBefore = await tokenVesting.vestingSchedules(beneficiaryA.address);
+            const totalAllocationBefore = await tokenVesting.totalVestingAllocation();
             await ethers.provider.send("evm_setNextBlockTimestamp", [
                 Number(scheduleBefore.startTime + scheduleBefore.cliffDuration + 1000n),
             ]);
@@ -609,6 +650,9 @@ describe("TokenVesting", function () {
             expect(scheduleAfter.revoked).to.be.true;
             expect(scheduleAfter.totalAllocation).to.equal(vested);
             expect(await mockToken.balanceOf(refundAddress.address)).to.equal(unvested);
+            expect(await tokenVesting.totalVestingAllocation()).to.equal(
+                totalAllocationBefore - unvested,
+            );
         });
 
         it("Should not increase vested amount after revocation", async function () {

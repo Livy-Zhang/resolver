@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// Modified StakingManager invariant test.
-// Fixes:
-// 1. Handler token distribution uses owner as sender.
-// 2. Adds ghost_totalUnstaked.
-// 3. Tracks stake -> unstake -> withdraw lifecycle.
-
 import {Test} from "forge-std/Test.sol";
 import {StakingManager} from "../../contracts/StakingManager.sol";
 import {MockERC20} from "../../contracts/mocks/MockERC20.sol";

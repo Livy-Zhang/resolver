@@ -1,6 +1,10 @@
 # Node modules
 /node_modules
 
+# Local AI coding-tool configuration
+/.agents/
+/.claude
+
 # Compilation output
 /dist
 

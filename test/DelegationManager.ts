@@ -213,6 +213,37 @@ describe("DelegationManager", function () {
             );
         });
 
+        it("Should restart the freezing period for the entire delegation when adding stake", async function () {
+            const firstAmount = ethers.parseEther("1000");
+            const secondAmount = ethers.parseEther("2000");
+            const totalAmount = firstAmount + secondAmount;
+
+            await delegationManager.connect(delegatorA).delegate(resolverA.address, firstAmount);
+            const firstDelegation = await delegationManager.delegations(delegatorA.address);
+
+            await ethers.provider.send("evm_setNextBlockTimestamp", [
+                Number(firstDelegation.updatedAt + BigInt(FREEZING_PERIOD)),
+            ]);
+            await ethers.provider.send("evm_mine", []);
+
+            await delegationManager.connect(delegatorA).delegate(resolverA.address, secondAmount);
+            const updatedDelegation = await delegationManager.delegations(delegatorA.address);
+            expect(updatedDelegation.delegatedAmount).to.equal(totalAmount);
+            expect(updatedDelegation.updatedAt).to.be.greaterThan(firstDelegation.updatedAt);
+
+            await expect(
+                delegationManager.connect(delegatorA).undelegate(totalAmount),
+            ).to.be.revertedWithCustomError(delegationManager, "FreezingPeriodNotOver");
+
+            await ethers.provider.send("evm_setNextBlockTimestamp", [
+                Number(updatedDelegation.updatedAt + BigInt(FREEZING_PERIOD)),
+            ]);
+            await ethers.provider.send("evm_mine", []);
+
+            await delegationManager.connect(delegatorA).undelegate(totalAmount);
+            expect(await delegationManager.getTotalDelegated()).to.equal(0);
+        });
+
         it("Should revert if resolver is zero address", async function () {
             const amount = ethers.parseEther("2000");
             await expect(
